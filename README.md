@@ -8,7 +8,7 @@ Code and data accompanying the paper:
 
 ## Overview
 
-This repository contains the code and data for training Echo State Network (ESN) functionals that map time-dependent external potentials to electron densities, going beyond the adiabatic approximation in time-dependent density functional theory (TDDFT). The Hubbard dimer and a four-site tight-binding model serve as benchmark systems.
+This repository contains the code and data for training Echo State Network (ESN) functionals that map time-dependent external potentials to electron densities. The Hubbard dimer and a four-site tight-binding model serve as benchmark systems.
 
 Two ESN implementations are examined:
 - **Direct ESN functional** — uses only the external potential as input
@@ -130,17 +130,6 @@ The same pattern applies to the other sections — see the repository structure 
 - Python >= 3.9
 - See `requirements.txt` for package dependencies
 
-```bash
-pip install -r requirements.txt
-```
-
-Or, to create an isolated environment:
-
-```bash
-python -m venv venv
-source venv/bin/activate        # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
 
 ## Key Dependencies
 

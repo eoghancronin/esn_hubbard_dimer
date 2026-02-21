@@ -1227,9 +1227,11 @@ def generate_figure_9():
     #results_multi = load_results('test1_augmented_results.json')
     
     # Load test data
-    data_arrays = json_file_to_arrays('appA/test1_test_data.json', observables=True)
-    Y, X, Z, TplusU, TplusUplusV, psi0_overlap, psi1_overlap, psi2_overlap, omega1_t, omega2_t, omega3_t = data_arrays
+    #data_arrays = json_file_to_arrays('appA/test1_test_data.json', observables=True)
+    #Y, X, Z, TplusU, TplusUplusV, psi0_overlap, psi1_overlap, psi2_overlap, omega1_t, omega2_t, omega3_t = data_arrays
     #Y = 2 * (Y - 1)
+    data_arrays = json_file_to_arrays('appA/test1_test_data.json', observables=False)
+    Y, X = data_arrays
     X = 2 * (X - 1)
     # Extract predictions
     y_pred_single = results_single['test']['y_pred_all'][:,:,0]/2 +1
@@ -1362,12 +1364,12 @@ if __name__ == "__main__":
     # Generate each figure
     try:
         generate_figure_3()
-        #generate_figure_4()
-        #generate_figure_5()
-        #generate_figure_6()
-        #generate_figure_7_2()
-        #generate_figure_8_4()
-        #generate_figure_9()
+        generate_figure_4()
+        generate_figure_5()
+        generate_figure_6()
+        generate_figure_7_2()
+        generate_figure_8_4()
+        generate_figure_9()
         
         print("\n" + "="*70)
         print("ALL FIGURES GENERATED SUCCESSFULLY!")
