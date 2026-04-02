@@ -690,6 +690,153 @@ def generate_figure_6():
     print("Figure 6 saved!")
     print("\n")
     print("\n")
+    
+def generate_figure_6_2():
+    """
+    Generate Figure 6 comparing dynamics for different decay rates (gamma_off).
+    Shows input signal and predicted vs exact density time series.
+    """
+    print("Generating Figure 6...")
+    print("\n")
+   
+    # Load results
+    results_direct = load_results('sec3b/test2_direct_results.json')
+    results_augmented = load_results('sec3b/test2_augmented_results.json')
+    y_pred_direct = results_direct['test']['y_pred_all']
+    y_pred_augmented = results_augmented['test']['y_pred_all']
+   
+    # Load test data
+    data_arrays = json_file_to_arrays('sec3b//test2_test_data.json', observables=False)
+    #X, Y, Z, TplusU, TplusUplusV, psi0_overlap, psi1_overlap, psi2_overlap, omega1_t, omega2_t, omega3_t = data_arrays
+    X, Y = data_arrays
+    Y = 2 * (Y - 1)
+   
+    # Calculate gamma_off test values (interpolated between training points)
+    num_sys_train = 201
+    num_sys_test = 200
+    gamma_off_train = np.linspace(0.01, 0.1, num_sys_train)
+    gamma_off_test = np.zeros(num_sys_test)
+    for i in range(num_sys_test):
+        gamma_off_test[i] = (gamma_off_train[i] + gamma_off_train[i+1]) / 2
+   
+    # Print statistics
+    print('direct-input ESN:')
+    print(f'  Max RMSE (train): {2*results_direct["train"]["max_rmse"]:.6f}')
+    print(f'  Max RMSE (test):  {2*results_direct["test"]["max_rmse"]:.6f}')
+    print(f'  Avg RMSE (train): {2*results_direct["train"]["avg_rmse"]:.6f}')
+    print(f'  Avg RMSE (test):  {2*results_direct["test"]["avg_rmse"]:.6f}')
+    print("\n")
+    print('augmented-input ESN:')
+    print(f'  Max RMSE (train): {2*results_augmented["train"]["max_rmse"]:.6f}')
+    print(f'  Max RMSE (test):  {2*results_augmented["test"]["max_rmse"]:.6f}')
+    print(f'  Avg RMSE (train): {2*results_augmented["train"]["avg_rmse"]:.6f}')
+    print(f'  Avg RMSE (test):  {2*results_augmented["test"]["avg_rmse"]:.6f}')
+   
+    # Time array
+    t_array = np.arange(len(X[0])) * dt
+   
+    # Select two example trajectories
+    idx_1 = 22
+    idx_2 = -1  # Last trajectory
+   
+    # Pre-calculate rounded gamma values for labels
+    gamma_1_str = str(np.round(gamma_off_test[idx_1], 3))
+    gamma_2_str = str(np.round(gamma_off_test[idx_2], 3))
+   
+    # Create figure
+    scale = 1.1
+    fig, (ax_input, ax_density) = plt.subplots(2, 1, figsize=(scale*7, scale*6))
+   
+    # Color scheme
+    color_exact_1 = '#F18F01'  # Orange
+    color_exact_2 = '#048A81'  # Teal
+    color_augmented_1 = '#2E86AB'  # Steel blue
+    color_augmented_2 = '#C73E1D'  # Red
+    color_direct_1 = '#A23B72'  # Magenta
+    color_direct_2 = 'black'#'#592E83'  # Purple
+   
+    warmup_long = 500
+   
+    # -------------------------------------------------------------------------
+    # Panel (a): Input detuning time series
+    # -------------------------------------------------------------------------
+    ax_input.plot(t_array, X[idx_1], label=rf'$\gamma_{{\mathrm{{off}}}} = {gamma_1_str}$', c=color_exact_1)
+    ax_input.plot(t_array, X[idx_2], label=rf'$\gamma_{{\mathrm{{off}}}} = {gamma_2_str}$', c=color_exact_2)
+    ax_input.set_xlabel('$t$', fontsize=LABEL_SIZE)
+    ax_input.set_ylabel(r'$\Delta v(t)$', fontsize=LABEL_SIZE)
+    ax_input.set_xlim(600, 1400)
+    ax_input.tick_params(labelsize=TICK_SIZE)
+    ax_input.axvline(x=warmup_long, color='black', linestyle='dotted',
+                    alpha=0.8, linewidth=2, label=r'$t_{\mathrm{warm-up}}$')
+    ax_input.legend(loc='upper left', ncols=1, labelspacing=0.1,
+                   framealpha=0.6, markerscale=0.5, fontsize=LEGEND_SIZE)
+   
+    # -------------------------------------------------------------------------
+    # Panel (b): Density time series comparison
+    # -------------------------------------------------------------------------
+    ax_density.plot(t_array, Y[idx_2],
+                   label=rf'$\Delta n^{{\text{{Exact}}}}(t) [\gamma_{{\text{{off}}}} = {gamma_2_str}]$',
+                   c=color_exact_2)
+    ax_density.plot(t_array, y_pred_augmented[idx_2],
+                   label=rf'$\Delta n^{{ESN}}_\omega(t)[\gamma_{{\text{{off}}}} = {gamma_2_str}]$',
+                   c=color_augmented_2)
+    ax_density.plot(t_array, y_pred_direct[idx_2],
+                   label=rf'$\Delta n^{{ESN}}(t)[\gamma_{{\text{{off}}}} = {gamma_2_str}]$',
+                   c=color_direct_2)
+   
+    ax_density.plot(t_array, y_pred_augmented[idx_1],
+                   label=rf'$\Delta n^{{ESN}}_\omega(t)[\gamma_{{\text{{off}}}} = {gamma_1_str}]$',
+                   c=color_augmented_1, linewidth=1.5)
+    ax_density.plot(t_array, y_pred_direct[idx_1],
+                   label=rf'$\Delta n^{{ESN}}(t)[\gamma_{{\text{{off}}}} = {gamma_1_str}]$',
+                   c=color_direct_1, linewidth=1.5)
+    ax_density.plot(t_array, Y[idx_1],
+                   label=rf'$\Delta n^{{\text{{Exact}}}}(t) [\gamma_{{\text{{off}}}} = {gamma_1_str}]$',
+                   c=color_exact_1, linestyle=(0, (10, 10)), linewidth=1.5)
+   
+    ax_density.set_xlabel('$t$', fontsize=LABEL_SIZE)
+    ax_density.set_ylabel(r'$\Delta n(t)$', fontsize=LABEL_SIZE)
+    ax_density.tick_params(labelsize=TICK_SIZE)
+    ax_density.set_ylim((-0.85, 2.0))
+    ax_density.set_xlim(600, 1400)
+    ax_density.axvline(x=warmup_long, color='black', linestyle='dotted',
+                      alpha=0.8, linewidth=2, label=r'$t_{\mathrm{warm-up}}$')
+    ax_density.legend(loc='lower left', ncols=1, labelspacing=0.05,
+                     framealpha=0.6, markerscale=0.1, handlelength=1.5,
+                     columnspacing=1.0, handletextpad=0.2,
+                     borderaxespad=0.0, borderpad=0.0, fontsize=LEGEND_SIZE)
+    
+    ax_inset = ax_density.inset_axes([0.6, 0.62, 0.35, 0.35])
+    inset_start_idx = int(1300 / dt)
+    inset_stop_idx = inset_start_idx + int(30 / dt)
+    ax_inset.plot(t_array[inset_start_idx:inset_stop_idx],
+                 Y[idx_2, inset_start_idx:inset_stop_idx],
+                 linewidth=2, c=color_exact_2)
+    ax_inset.plot(t_array[inset_start_idx:inset_stop_idx],
+                 y_pred_augmented[idx_2, inset_start_idx:inset_stop_idx],
+                 linewidth=2, c=color_augmented_2)
+    ax_inset.plot(t_array[inset_start_idx:inset_stop_idx],
+                 y_pred_direct[idx_2, inset_start_idx:inset_stop_idx],
+                 linewidth=2, c=color_direct_2)
+    ax_inset.set_xlabel(r'$t$', labelpad=0.1, fontsize=INSET_LABEL_SIZE)
+    ax_inset.set_ylabel(r'$\Delta n (t)$', labelpad=0.1, fontsize=INSET_LABEL_SIZE)
+   
+    # Add panel labels
+    ax_input.text(-0.1, 1.02, '(a)', transform=ax_input.transAxes,
+                 fontsize=TITLE_SIZE, fontweight='bold')
+    ax_density.text(-0.1, 1.02, '(b)', transform=ax_density.transAxes,
+                   fontsize=TITLE_SIZE, fontweight='bold')
+   
+    # Adjust layout
+    plt.subplots_adjust(left=0.08, right=0.95, bottom=0.08, top=0.92,
+                       wspace=0.2, hspace=0.3)
+   
+    # Save figure
+    plt.savefig('plots/Fig6.png', dpi=400, bbox_inches='tight')
+    plt.close()
+    print("Figure 6 saved!")
+    print("\n")
+    print("\n")
 
 
 # ============================================================================
@@ -878,8 +1025,8 @@ def generate_figure_7_2():
                 label=f'$\\Delta n^{{\\mathrm{{ESN}}}}_{{\\omega}}[\\omega_{{\\mathrm{{dr}}}}=${omega_dr_test[idx2]:.3f}]')
     
     # Add warmup line
-    ax_time.axvline(x=warmup_time, color='gray', linestyle='--',
-                   alpha=0.8, linewidth=1.5, label=r'$t_{\mathrm{warm-up}}$')
+    ax_time.axvline(x=warmup_time, color='black', linestyle='--',
+                    linewidth=2.5, label=r'$t_{\mathrm{warm-up}}$')
     
     ax_time.set_xlabel(r'$t$', fontsize=LABEL_SIZE_FIG7)
     ax_time.set_ylabel(r'$\Delta n$', fontsize=LABEL_SIZE_FIG7)
@@ -1213,6 +1360,250 @@ def generate_figure_8_4():
     plt.close()
     print("Figure 8 saved!")
     
+def generate_figure_8_thesis():
+    """
+    Generate Figure 8 showing occupation density on a 4-site lattice.
+    Split into two figures:
+    - Fig8_1: 4x2 grid of contour plots (rows 1-4, cols: Exact, Single-input ESN)
+    - Fig8_2: 4x2 grid with line plots (rows 1-2) and FFT plots (rows 3-4)
+    """
+    print("Generating Figure 8...")
+    
+    # Load test data
+    with open('sec3d/test4_test_data_1200.json', 'r') as f:
+        data = json.load(f)
+    
+    # Extract arrays
+    density_exact = np.array(data['n_array'])
+    potential_array = np.array(data['v_array'])[:, -1, 1]
+    tmax = data['tmax']
+    dt = data['dt']
+    n_timesteps = int(tmax / dt)
+    t_array = np.linspace(0, tmax, n_timesteps)
+    
+    print(f"Exact data shape: {density_exact.shape}")
+    
+    # Load predictions
+    with open('sec3d/test4_direct_1200.json', 'r') as f:
+        results_single = json.load(f)
+    density_single = np.array(results_single['test']['y_pred_all'])
+    print(f"Single-input ESN shape: {density_single.shape}")
+    
+    idx = 40
+    exact_ex = density_exact[idx,:,:]
+    single_ex = density_single[idx,:,:]
+    
+    # Clip densities to physical range [0, 1]
+    density_exact = np.clip(density_exact, 0, 1)
+    density_single = np.clip(density_single, 0, 1)
+    
+    # Create meshgrid for contour plots
+    time_mesh, potential_mesh = np.meshgrid(t_array, potential_array)
+    
+    # Compute FFTs
+    fft_start_idx = int(200 / dt)
+    fft_exact = np.fft.rfft(exact_ex[fft_start_idx:, :], axis=0, norm="forward")
+    fft_single = np.fft.rfft(single_ex[fft_start_idx:, :], axis=0, norm="forward")
+    fft_freq = np.fft.rfftfreq(len(exact_ex[fft_start_idx:, 0]), dt)
+    omega = 2 * np.pi * fft_freq
+    
+    # Compute transition frequencies
+    v_sites = np.array(data['v_array'])[idx, -1, :]
+    T_hop = 0.05
+    L = 4
+    H0 = H__(v_sites, T_hop, L)
+    vals, vecs = np.linalg.eigh(H0)
+    transitions = np.array([vals[3] - vals[0],
+                            vals[3] - vals[1],
+                            vals[3] - vals[2],
+                            vals[2] - vals[0],
+                            vals[2] - vals[1],
+                            vals[1] - vals[0]])
+    
+    transition_labels = [r'$\omega_{0,3}$',
+                         r'$\omega_{1,3}$',
+                         r'$\omega_{2,3}$',
+                         r'$\omega_{0,2}$',
+                         r'$\omega_{1,2}$',
+                         r'$\omega_{0,1}$']
+    transition_colors = ['green', 'orange', 'purple', 'cyan', 'magenta', 'brown']
+    
+    for i in range(6):
+        print(transition_labels[i], transitions[i])
+    
+    # Font sizes for this figure
+    fontsize = 16
+    title_fontsize = 16
+    
+    # Panel labels for contour subplots
+    panel_labels = [['(a)', '(b)', '(c)', '(d)'],
+                   ['(e)', '(f)', '(g)', '(h)']]
+    
+    # Panel labels for line plot subplots
+    line_panel_labels = ['(a)', '(b)', '(c)', '(d)']
+    
+    # Panel labels for FFT subplots
+    fft_panel_labels = ['(e)', '(f)', '(g)', '(h)']
+    
+    # Column titles and data
+    column_titles = [r'$\bar{n}^{\mathrm{Exact}}$',
+                    r'$\bar{n}^{\mathrm{ESN}}$']
+    density_arrays = [density_exact, density_single]
+    
+    # =========================================================================
+    # FIGURE 1: Contour plots (4x2)
+    # =========================================================================
+    fig1, axes1 = plt.subplots(4, 2, figsize=(8, 8))
+    
+    contour = None
+    for site_idx in range(4):
+        for col_idx, (density_data, col_title) in enumerate(zip(density_arrays, column_titles)):
+            ax = axes1[site_idx, col_idx]
+            
+            site_density = density_data[:, :, site_idx]
+            
+            contour = ax.contourf(time_mesh, potential_mesh, site_density,
+                                 levels=200, cmap='viridis', vmin=0, vmax=1)
+            
+            ax.text(0.05, 0.8, panel_labels[col_idx][site_idx],
+                   transform=ax.transAxes, fontsize=fontsize, fontweight='bold',
+                   bbox=dict(facecolor='white', alpha=0.7))
+            
+            if col_idx > 0:
+                ax.axvline(x=warmup_time, color='white', linestyle='--',
+                          alpha=0.8, linewidth=2, label=r'$t_{\mathrm{warm-up}}$')
+            
+            if site_idx == 0:
+                ax.set_title(col_title, fontsize=title_fontsize, fontweight='bold')
+                if col_idx == 1:
+                    ax.legend(loc='lower left', ncols=1, labelspacing=0.05, 
+                                     framealpha=0.6, markerscale=0.1, handlelength=1.5,
+                                     columnspacing=0.5, handletextpad=0.2, 
+                                     borderaxespad=0.0, borderpad=0.0, fontsize=LEGEND_SIZE)
+            
+            if col_idx == 0:
+                ax.text(-0.3, 0.5, f'Site {site_idx + 1}',
+                       transform=ax.transAxes, rotation=90,
+                       verticalalignment='center', fontsize=fontsize)
+                ax.set_ylabel(r'$\epsilon$', fontsize=fontsize)
+            
+            ax.set_xlim(0, tmax)
+            ax.set_ylim(potential_mesh.min(), potential_mesh.max())
+            ax.set_xticks([0, 300, 600, 900])
+            ax.set_xlabel('$t$', fontsize=fontsize)
+            ax.tick_params(axis='x', labelsize=fontsize-2)
+            ax.set_yticks([0.01,0.05,0.09])
+            
+            if col_idx != 0:
+                ax.set_yticklabels([])
+            else:
+                ax.tick_params(axis='y', labelsize=fontsize-2)
+    
+    cbar_ax1 = fig1.add_axes([0.92, 0.15, 0.02, 0.7])
+    cbar = fig1.colorbar(contour, cax=cbar_ax1, ticks=[0.1, 0.3, 0.5, 0.7, 0.9])
+    cbar.set_label('$n_i$', rotation=270, labelpad=20, fontsize=fontsize)
+    cbar.ax.tick_params(labelsize=fontsize-2)
+    
+    plt.subplots_adjust(left=0.08, right=0.9, bottom=0.04, top=0.96,
+                       wspace=0.05, hspace=0.4)
+    
+    plt.savefig('plots/Fig8_1.png', dpi=400, bbox_inches='tight')
+    plt.close()
+    print("Figure 8_1 saved!")
+    
+    # =========================================================================
+    # FIGURE 2: Line plots (rows 0-1) + FFT plots (rows 2-3) => 4x2
+    # =========================================================================
+    fig2, axes2 = plt.subplots(4, 2, figsize=(8, 8))
+    
+    # Line plots (rows 0-1)
+    for site_idx in range(4):
+        row_idx = site_idx // 2
+        col_idx = site_idx % 2
+        
+        ax = axes2[row_idx, col_idx]
+        
+        ax.plot(t_array, exact_ex[:, site_idx], 'b-', linewidth=1.5, label='Exact')
+        ax.plot(t_array, single_ex[:, site_idx], 'r--', linewidth=1.5, label='ESN')
+        
+        ax.axvline(x=warmup_time, color='gray', linestyle='--',
+                  alpha=0.8, linewidth=1.5, label=r'$t_{\mathrm{warm-up}}$')
+        
+        ax.text(0.05, 0.85, line_panel_labels[site_idx],
+               transform=ax.transAxes, fontsize=fontsize, fontweight='bold',
+               bbox=dict(facecolor='white', alpha=0.7))
+        
+        ax.text(0.95, 0.85, f'Site {site_idx + 1}',
+               transform=ax.transAxes, fontsize=fontsize-2,
+               ha='right', bbox=dict(facecolor='white', alpha=0.7))
+        
+        if site_idx == 0:
+            ax.legend(loc='lower left', ncols=1, labelspacing=0.05, 
+                             framealpha=0.6, markerscale=0.1, handlelength=1.5,
+                             columnspacing=0.5, handletextpad=0.2, 
+                             borderaxespad=0.0, borderpad=0.0, fontsize=LEGEND_SIZE)
+        
+        ax.set_xticks([0, 300, 600, 900])
+        ax.set_xlabel('$t$', fontsize=fontsize)
+        ax.tick_params(axis='x', labelsize=fontsize-2)
+        
+        if col_idx == 0:
+            ax.set_ylabel('$n_i$', fontsize=fontsize)
+            ax.tick_params(axis='y', labelsize=fontsize-2)
+        else:
+            ax.set_yticklabels([])
+        
+        ax.set_xlim(0, tmax)
+        ax.set_ylim(0.2, 0.8)
+    
+    # FFT plots (rows 2-3)
+    for site_idx in range(4):
+        row_idx = 2 + site_idx // 2
+        col_idx = site_idx % 2
+        
+        ax = axes2[row_idx, col_idx]
+        
+        ax.plot(omega, np.abs(fft_exact[:, site_idx]), 'b-', linewidth=1.5, label='Exact')
+        ax.plot(omega, np.abs(fft_single[:, site_idx]), 'r--', linewidth=1.5, label='ESN')
+        
+        for i in range(6):
+            ax.axvline(transitions[i], color=transition_colors[i], linestyle='--',
+                      linewidth=1.2, alpha=0.8, label=transition_labels[i])
+        
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        ax.set_xlim(1E-2, 0.6)
+        
+        ax.text(0.05, 0.85, fft_panel_labels[site_idx],
+               transform=ax.transAxes, fontsize=fontsize, fontweight='bold',
+               bbox=dict(facecolor='white', alpha=0.7))
+        
+        ax.text(0.95, 0.85, f'Site {site_idx + 1}',
+               transform=ax.transAxes, fontsize=fontsize-2,
+               ha='right', bbox=dict(facecolor='white', alpha=0.7))
+        
+        if site_idx == 0:
+            ax.legend(loc='lower left', ncols=3, labelspacing=0.05, 
+                             framealpha=0.6, markerscale=0.1, handlelength=1.5,
+                             columnspacing=0.5, handletextpad=0.2, 
+                             borderaxespad=0.0, borderpad=0.0, fontsize=LEGEND_SIZE)
+        
+        ax.set_xlabel(r'$\omega$', fontsize=fontsize)
+        ax.tick_params(axis='x', labelsize=fontsize-2)
+        ax.set_xticks([1E-2,1E-1])
+        if col_idx == 0:
+            ax.set_ylabel(r'$|\tilde{n}_i(\omega)|$', fontsize=fontsize)
+            ax.tick_params(axis='y', labelsize=fontsize-2)
+        else:
+            ax.set_yticklabels([])
+    
+    plt.subplots_adjust(left=0.08, right=0.9, bottom=0.04, top=0.96,
+                       wspace=0.05, hspace=0.4)
+    
+    plt.savefig('plots/Fig8_2.png', dpi=400, bbox_inches='tight')
+    plt.close()
+    print("Figure 8_2 saved!")
+    
 def generate_figure_9():
     """
     Generate Figure 9 showing:
@@ -1366,7 +1757,7 @@ if __name__ == "__main__":
         generate_figure_3()
         generate_figure_4()
         generate_figure_5()
-        generate_figure_6()
+        generate_figure_6_2()
         generate_figure_7_2()
         generate_figure_8_4()
         generate_figure_9()
